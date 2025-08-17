@@ -11,6 +11,7 @@ from dependencies.managers.database_manager import DatabaseManager
 from dependencies.logger import logger
 
 from handlers.batch_request_handler import BatchRequestHandler
+from handlers.download_handler import DownloadHandler
 from handlers.history_handler import HistoryHandler
 from handlers.status_handler import StatusHandler
 from utility.common import CommonUtils
@@ -99,6 +100,7 @@ async def batch_status(request_id: str, response: Response, request: Request):
 
 
 @api_router.post("/v1/request-list")
+@api_router.post("/portal/v1/ie/multiple/request")
 async def batch_request(
     request: Request,
     response: Response,
@@ -128,7 +130,6 @@ async def batch_request(
 
 @api_router.post("/v1/multiple/history")
 @api_router.post("/portal/v1/ie/multiple/history")
-@api_router.get("/history")
 async def batch_history(
         response: Response,
         request: Request,
@@ -150,16 +151,13 @@ async def batch_history(
     logger.info(f'Incoming end date is {end_date}')
 
     request_id = str(uuid.uuid4())
-    db_manager = DatabaseManager()
-    digitap_session = None
-    batch_session = None
     host = request.headers.get("host", "")
     common_util_obj = CommonUtils()
     env = common_util_obj.determine_environment(host)
     db_manager, softi_session, batch_session = get_db_sessions()
 
     try:
-        ent_id, _, _ = Authenticator().validate(request_headers, softi_session)
+        ent_id, _, = Authenticator().validate(request_headers, softi_session)
         response_body = HistoryHandler(batch_session).history_api(ent_id, page, limit, service_id, start_date, end_date, env)
 
     except Exception as e:
@@ -169,3 +167,36 @@ async def batch_history(
     logger.info(f"[REQUEST] Response: {response_body}")
 
     return response_body
+
+
+
+@api_router.post("/portal/v1/ie/multiple/report/{request_id}")
+async def batch_download(
+        request_id: str,
+        response: Response,
+        request: Request
+):
+    logger.info("Inside batch/download/request_id route ")
+    request_headers = request.headers
+    logger.info(f'Incoming Request Headers: {request_headers.__dict__}')
+    logger.info(f'Incoming Request Service ID: {request_id}')
+    request_id = str(uuid.uuid4())
+
+    host = request.headers.get("host", "")
+    common_util_obj = CommonUtils()
+    env = common_util_obj.determine_environment(host)
+    db_manager, softi_session, batch_session = get_db_sessions()
+    try:
+
+        ent_id, _, _ = Authenticator().validate(request_headers, softi_session)
+        response_body = DownloadHandler().download_excel_sheet(ent_id, request_id, env)
+
+    except Exception as e:
+        response_body = handle_error(e, request_id, response)
+    finally:
+        close_sessions(db_manager, softi_session, batch_session)
+    logger.info(f"[REQUEST] Response: {response_body}")
+
+    return response_body
+
+
