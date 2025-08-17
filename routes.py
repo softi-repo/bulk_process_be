@@ -11,6 +11,7 @@ from dependencies.managers.database_manager import DatabaseManager
 from dependencies.logger import logger
 
 from handlers.batch_request_handler import BatchRequestHandler
+from handlers.history_handler import HistoryHandler
 from handlers.status_handler import StatusHandler
 from utility.common import CommonUtils
 
@@ -122,4 +123,63 @@ async def batch_request(
         close_sessions(db_manager, softi_session, batch_session)
 
     logger.info(f"[REQUEST] Response: {response_body}")
+    return response_body
+
+
+@api_router.post("/v1/multiple/history")
+@api_router.post("/portal/v1/ie/multiple/history")
+@api_router.get("/history")
+async def batch_history(
+        response: Response,
+        request: Request,
+        page: int,
+        limit: int
+):
+    logger.info("Inside batch/history  route ")
+    request_headers = request.headers
+    parameter = request.query_params
+    service_id = parameter.get("service_id")
+    start_date = parameter.get("start_date")
+    end_date = parameter.get("end_date")
+
+    logger.info(f'Incoming Request Headers in history api: {request_headers.__dict__}')
+    logger.info(f'Incoming Limit (Number_of_row_per_page) {limit}')
+    logger.info(f'Incoming page number {page}')
+    logger.info(f'Incoming service id is {service_id}')
+    logger.info(f'Incoming start date is {start_date}')
+    logger.info(f'Incoming end date is {end_date}')
+
+    digitap_session_id = str(uuid.uuid4())
+    db_manager = DatabaseManager()
+    digitap_session = None
+    batch_session = None
+    try:
+        digitap_session = db_manager.get_db(Configuration.DIGITAP_DB_CONNECTION_URL)
+        batch_session = db_manager.get_db(Configuration.BATCH_DB_CONNECTION_URL)
+        ent_id, _, _ = Authenticator().validate(request_headers, digitap_session)
+        response_body = HistoryHandler(batch_session).history_api(ent_id, page, limit, service_id, start_date, end_date)
+
+    except InterruptedError as e:
+        status_code, error_message = str(e).split('|')
+        response_body = {
+            "error": error_message,
+            "status": False,
+            "request_id": digitap_session_id
+        }
+        response.status_code = int(status_code)
+
+    except Exception:
+        logger.exception('Error occurred in `/history`')
+        response_body = {
+            "http_response_code": status.HTTP_503_SERVICE_UNAVAILABLE,
+            "error": INTERNAL_SERVER_ERROR,
+        }
+        response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+
+    finally:
+        digitap_session.close()
+        batch_session.close()
+        db_manager.dispose()
+
+    logger.info(f'Response_body: {response_body}')
     return response_body
