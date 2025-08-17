@@ -18,45 +18,9 @@ class HistoryHandler:
     def __init__(self, db_session):
         self.db_session = db_session
 
-    def get_purge_date(self, batch_request_obj, ent_id: int):
-        manual_purge_config = (
-            self.db_session.query(BatchConfig)
-            .filter(BatchConfig.key == BatchConfigureConstant.MANUAL_PURGED_ALLOWED_ENT_ID_LIST.value)
-            .first()
-        )
-        allowed_ent_ids_for_manual_purge = json.loads(manual_purge_config.value)
-        is_manual_purge_allowed = str(ent_id) in allowed_ent_ids_for_manual_purge
-        if is_manual_purge_allowed and batch_request_obj.purge_status == BatchRequestStatus.PURGE_COMPLETED.value:
-            purge_date = batch_request_obj.updated_on
-        elif (
-                is_manual_purge_allowed or
-                batch_request_obj.status in [
-                    BatchRequestStatus.ERROR.value,
-                    BatchRequestStatus.INVALID.value
-                ]
-        ):
-            purge_date = None
-        else:
-            purge_date = (
-                batch_request_obj.updated_on
-                if batch_request_obj.purge_status == BatchRequestStatus.PURGE_COMPLETED.value
-                else batch_request_obj.updated_on + timedelta(days=Configuration.NO_OF_DAYS_FOR_AUTO_PURGE)
-            )
-        return purge_date
 
-    def history_api(self, ent_id: int, page_number: int, rows: int, service_id: str, start_date: str, end_date: str):
-        """
-        Display the current statics along with the request_id to front end
-        when Authentication is
-        passed is provided in from client
-        :param ent_id: int
-        :param page_number :int
-        :param rows : int
-        :param service_id: int
-        :param start_date: str
-        :param end_date: str
-        :return batch_request_id_list : List
-        """
+    def history_api(self, ent_id: int, page_number: int, rows: int, service_id: str, start_date: str, end_date: str, env: str):
+
         logger.info('Inside history_api function')
         logger.info(f'The ent_id from the input api: {ent_id}')
 
@@ -87,7 +51,6 @@ class HistoryHandler:
         }
 
         for batch_request_obj in batch_request_objs:
-            purge_date = self.get_purge_date(batch_request_obj, ent_id)
 
             if batch_request_obj.request_id and batch_request_obj.current_statistics:
                 batch_request_compiled_list.append({
@@ -107,8 +70,7 @@ class HistoryHandler:
                     "scheduled_on": batch_request_obj.scheduled_on,
                     "parent_id": batch_request_obj.parent_id,
                     "is_parent": batch_request_obj.is_parent,
-                    "error_message": batch_request_obj.error_message,
-                    "purge_date": purge_date
+                    "error_message": batch_request_obj.error_message
                 })
             else:
                 batch_request_compiled_list.append({
@@ -123,8 +85,7 @@ class HistoryHandler:
                     "parent_id": batch_request_obj.parent_id,
                     "is_parent": batch_request_obj.is_parent,
                     "error_message": batch_request_obj.error_message,
-                    "updated_on": batch_request_obj.updated_on,
-                    "purge_date": purge_date
+                    "updated_on": batch_request_obj.updated_on
 
                 })
             dict_of_history_handler.update({

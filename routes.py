@@ -149,37 +149,23 @@ async def batch_history(
     logger.info(f'Incoming start date is {start_date}')
     logger.info(f'Incoming end date is {end_date}')
 
-    digitap_session_id = str(uuid.uuid4())
+    request_id = str(uuid.uuid4())
     db_manager = DatabaseManager()
     digitap_session = None
     batch_session = None
+    host = request.headers.get("host", "")
+    common_util_obj = CommonUtils()
+    env = common_util_obj.determine_environment(host)
+    db_manager, softi_session, batch_session = get_db_sessions()
+
     try:
-        digitap_session = db_manager.get_db(Configuration.DIGITAP_DB_CONNECTION_URL)
-        batch_session = db_manager.get_db(Configuration.BATCH_DB_CONNECTION_URL)
-        ent_id, _, _ = Authenticator().validate(request_headers, digitap_session)
-        response_body = HistoryHandler(batch_session).history_api(ent_id, page, limit, service_id, start_date, end_date)
+        ent_id, _, _ = Authenticator().validate(request_headers, softi_session)
+        response_body = HistoryHandler(batch_session).history_api(ent_id, page, limit, service_id, start_date, end_date, env)
 
-    except InterruptedError as e:
-        status_code, error_message = str(e).split('|')
-        response_body = {
-            "error": error_message,
-            "status": False,
-            "request_id": digitap_session_id
-        }
-        response.status_code = int(status_code)
-
-    except Exception:
-        logger.exception('Error occurred in `/history`')
-        response_body = {
-            "http_response_code": status.HTTP_503_SERVICE_UNAVAILABLE,
-            "error": INTERNAL_SERVER_ERROR,
-        }
-        response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
-
+    except Exception as e:
+        response_body = handle_error(e, request_id, response)
     finally:
-        digitap_session.close()
-        batch_session.close()
-        db_manager.dispose()
+        close_sessions(db_manager, softi_session, batch_session)
+    logger.info(f"[REQUEST] Response: {response_body}")
 
-    logger.info(f'Response_body: {response_body}')
     return response_body
