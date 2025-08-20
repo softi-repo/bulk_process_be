@@ -136,19 +136,14 @@ async def batch_history(
         page: int,
         limit: int
 ):
-    logger.info("Inside batch/history  route ")
+    logger.info("Inside batch/history route ")
     request_headers = request.headers
     parameter = request.query_params
-    service_id = parameter.get("service_id")
-    start_date = parameter.get("start_date")
-    end_date = parameter.get("end_date")
 
     logger.info(f'Incoming Request Headers in history api: {request_headers.__dict__}')
     logger.info(f'Incoming Limit (Number_of_row_per_page) {limit}')
     logger.info(f'Incoming page number {page}')
-    logger.info(f'Incoming service id is {service_id}')
-    logger.info(f'Incoming start date is {start_date}')
-    logger.info(f'Incoming end date is {end_date}')
+
 
     request_id = str(uuid.uuid4())
     host = request.headers.get("host", "")
@@ -158,7 +153,7 @@ async def batch_history(
 
     try:
         ent_id, _, = Authenticator().validate(request_headers, softi_session)
-        response_body = HistoryHandler(batch_session).history_api(ent_id, page, limit, service_id, start_date, end_date, env)
+        response_body = HistoryHandler(batch_session).history_api(ent_id, page, limit, env)
 
     except Exception as e:
         response_body = handle_error(e, request_id, response)

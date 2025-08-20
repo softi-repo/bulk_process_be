@@ -4,13 +4,11 @@ from datetime import datetime, timedelta
 from starlette import status
 
 from dependencies.configuration import Configuration
-from dependencies.constants import BatchRequestStatus, BatchConfigureConstant
+from dependencies.constants import BatchRequestStatus
 from dependencies.logger import logger
 
 from handlers.download_handler import DownloadHandler
 
-from models.batch_request import BatchRequest
-from models.bpe_batch_config import BatchConfig
 
 
 class HistoryHandler:
@@ -18,27 +16,16 @@ class HistoryHandler:
     def __init__(self, db_session):
         self.db_session = db_session
 
-
-    def history_api(self, ent_id: int, page_number: int, rows: int, service_id: str, start_date: str, end_date: str, env: str):
+    def history_api(self, ent_id: int, page_number: int, no_of_rows: int, env: str):
 
         logger.info('Inside history_api function')
         logger.info(f'The ent_id from the input api: {ent_id}')
 
-        start_date_obj = datetime.strptime(start_date, '%Y-%m-%d') if start_date else None
-        end_date_obj = datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1) - timedelta(seconds=1) if end_date else None
-
-        query_params = [ BatchRequest.ent_id == ent_id, BatchRequest.parent_id == None ]
-
-        if start_date_obj and end_date_obj:
-            query_params.append(BatchRequest.created_on >= start_date_obj)
-            query_params.append(BatchRequest.created_on <= end_date_obj)
-
-        if service_id:
-            query_params.append(BatchRequest.service_id == int(service_id))
+        query_params = [BatchRequest.ent_id == ent_id, BatchRequest.parent_id == None ]
 
         batch_request_objs = self.db_session.query(BatchRequest).filter(*query_params).order_by(
-            BatchRequest.id.desc()).limit(rows).offset(
-            page_number * rows
+            BatchRequest.id.desc()).limit(no_of_rows).offset(
+            page_number * no_of_rows
         ).all()
 
         batch_request_objs_count = self.db_session.query(BatchRequest).filter(*query_params).count()
