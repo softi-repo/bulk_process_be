@@ -13,6 +13,7 @@ from dependencies.logger import logger
 from handlers.batch_request_handler import BatchRequestHandler
 from handlers.download_handler import DownloadHandler
 from handlers.history_handler import HistoryHandler
+from handlers.mutiple_status_api import MultipleStatusHandler
 from handlers.status_handler import StatusHandler
 from utility.common import CommonUtils
 
@@ -194,4 +195,32 @@ async def batch_download(
 
     return response_body
 
+
+@api_router.post("/portal/v1/ie/multiple/status/{request_id}")
+async def batch_multiple_status(
+        request_id: str,
+        response: Response,
+        request: Request
+):
+    logger.info("Inside multiple/status route ")
+    request_headers = request.headers
+
+    logger.info(f'Incoming Request Headers in history api: {request_headers.__dict__}')
+
+    host = request.headers.get("host", "")
+    common_util_obj = CommonUtils()
+    env = common_util_obj.determine_environment(host)
+    db_manager, softi_session, batch_session = get_db_sessions()
+
+    try:
+        ent_id, _, = Authenticator().validate(request_headers, softi_session)
+        response_body = MultipleStatusHandler(batch_session).multiple_status_api(ent_id, env, request_id)
+
+    except Exception as e:
+        response_body = handle_error(e, request_id, response)
+    finally:
+        close_sessions(db_manager, softi_session, batch_session)
+    logger.info(f"[REQUEST] Response: {response_body}")
+
+    return response_body
 
