@@ -35,22 +35,26 @@ class HistoryHandler:
 
             if batch_request_obj.request_id and batch_request_obj.current_statistics:
                 batch_request_compiled_list.append({
+                    "id": batch_request_obj.id,
                     "client_ref_id": batch_request_obj.client_ref_id,
                     "request_id": batch_request_obj.request_id,
                     "current_statistics": batch_request_obj.current_statistics,
                     "batch_request_status": batch_request_obj.status,
                     "created_on": batch_request_obj.created_on,
                     "updated_on": batch_request_obj.updated_on,
+                    "number_of_pan": len(batch_request_obj.pan_list) if batch_request_obj.pan_list else None,
                     "error_message": batch_request_obj.error_message
                 })
             else:
                 batch_request_compiled_list.append({
+                    "id": batch_request_obj.id,
                     "client_ref_id": batch_request_obj.client_ref_id,
                     "request_id": batch_request_obj.request_id,
                     "current_statistics": None,
                     "batch_request_status": batch_request_obj.status,
                     "created_on": batch_request_obj.created_on,
                     "error_message": batch_request_obj.error_message,
+                    "number_of_pan": len(batch_request_obj.pan_list) if batch_request_obj.pan_list else None,
                     "updated_on": batch_request_obj.updated_on
                 })
             dict_of_history_handler.update({
