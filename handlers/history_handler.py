@@ -1,11 +1,7 @@
-import json
-from datetime import datetime, timedelta
-
 from starlette import status
 
 from dependencies.logger import logger
 
-from handlers.download_handler import DownloadHandler
 from models.batch_request import IEBatchRequestLog
 
 
