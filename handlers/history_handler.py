@@ -3,12 +3,10 @@ from datetime import datetime, timedelta
 
 from starlette import status
 
-from dependencies.configuration import Configuration
-from dependencies.constants import BatchRequestStatus
 from dependencies.logger import logger
 
 from handlers.download_handler import DownloadHandler
-
+from models.batch_request import IEBatchRequestLog
 
 
 class HistoryHandler:
@@ -21,14 +19,14 @@ class HistoryHandler:
         logger.info('Inside history_api function')
         logger.info(f'The ent_id from the input api: {ent_id}')
 
-        query_params = [BatchRequest.ent_id == ent_id, BatchRequest.parent_id == None ]
+        query_params = [IEBatchRequestLog.ent_id == ent_id, IEBatchRequestLog.env == env ]
 
-        batch_request_objs = self.db_session.query(BatchRequest).filter(*query_params).order_by(
-            BatchRequest.id.desc()).limit(no_of_rows).offset(
+        batch_request_objs = self.db_session.query(IEBatchRequestLog).filter(*query_params).order_by(
+            IEBatchRequestLog.id.desc()).limit(no_of_rows).offset(
             page_number * no_of_rows
         ).all()
 
-        batch_request_objs_count = self.db_session.query(BatchRequest).filter(*query_params).count()
+        batch_request_objs_count = self.db_session.query(IEBatchRequestLog).filter(*query_params).count()
 
         batch_request_compiled_list = []
         dict_of_history_handler = {
@@ -41,39 +39,23 @@ class HistoryHandler:
 
             if batch_request_obj.request_id and batch_request_obj.current_statistics:
                 batch_request_compiled_list.append({
-                    "client_ref_num": batch_request_obj.client_ref_num,
+                    "client_ref_id": batch_request_obj.client_ref_id,
                     "request_id": batch_request_obj.request_id,
                     "current_statistics": batch_request_obj.current_statistics,
-                    "service_id": batch_request_obj.service_id,
-                    # "download_url": True if batch_request_obj.output_s3_url else False,
-                    "download_url": (
-                        DownloadHandler().download_excel_sheet(batch_request_obj.ent_id, batch_request_obj.request_id).get("result", {}).get("pre_singed_url", None)
-                        if DownloadHandler().download_excel_sheet(batch_request_obj.ent_id, batch_request_obj.request_id) else None
-                    ),
                     "batch_request_status": batch_request_obj.status,
                     "created_on": batch_request_obj.created_on,
                     "updated_on": batch_request_obj.updated_on,
-                    "purge_status": batch_request_obj.purge_status,
-                    "scheduled_on": batch_request_obj.scheduled_on,
-                    "parent_id": batch_request_obj.parent_id,
-                    "is_parent": batch_request_obj.is_parent,
                     "error_message": batch_request_obj.error_message
                 })
             else:
                 batch_request_compiled_list.append({
-                    "client_ref_num": batch_request_obj.client_ref_num,
+                    "client_ref_id": batch_request_obj.client_ref_id,
                     "request_id": batch_request_obj.request_id,
                     "current_statistics": None,
                     "batch_request_status": batch_request_obj.status,
-                    "service_id": batch_request_obj.service_id,
                     "created_on": batch_request_obj.created_on,
-                    "purge_status": batch_request_obj.purge_status,
-                    "scheduled_on": batch_request_obj.scheduled_on,
-                    "parent_id": batch_request_obj.parent_id,
-                    "is_parent": batch_request_obj.is_parent,
                     "error_message": batch_request_obj.error_message,
                     "updated_on": batch_request_obj.updated_on
-
                 })
             dict_of_history_handler.update({
                 "result": batch_request_compiled_list,
