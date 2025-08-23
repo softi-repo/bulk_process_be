@@ -68,7 +68,7 @@ class CommonUtils:
             if not encrypted_client_id or not encrypted_client_secret:
                 raise HTTPException(status_code=401, detail="JWT missing required fields")
 
-            AES_SECRET_KEY = b'dXNlcl9tYW5hZ2Vt'
+            AES_SECRET_KEY = b'necdJPlQYW9NfbpRuoV6UxnUTyhSeBLl'
 
             # Decrypt the values
             client_id = self.decrypt_data(encrypted_client_id, AES_SECRET_KEY)
