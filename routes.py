@@ -1,7 +1,8 @@
 import uuid
+from email.header import Header
 from typing import Optional
-
-from fastapi import Request, Response, Form, APIRouter, UploadFile, File
+from jose import jwt
+from fastapi import Request, Response, Form, APIRouter, UploadFile, File, HTTPException
 from starlette import status
 
 from dependencies.configuration import Configuration
@@ -113,10 +114,21 @@ async def batch_request(
     host = request.headers.get("host", "")
     common_util_obj = CommonUtils()
     env = common_util_obj.determine_environment(host)
+    authorization = request.headers.get("Authorization")
 
     db_manager, softi_session, batch_session = get_db_sessions()
     try:
-        ent_id, _ = Authenticator().validate(request.headers, softi_session, service_id = 43)
+        if authorization:
+            if authorization.startswith("Bearer "):
+                bearer_token = authorization.split(" ")[1]
+                ent_id, client_id, client_secret, auth_token = CommonUtils().bearer_token_function(bearer_token)
+                print("ent_id, client_id, client_secret, auth_token")
+                print(ent_id, client_id, client_secret, auth_token)
+            elif authorization.startswith("Basic "):
+                ent_id, _ = Authenticator().validate(request.headers, softi_session, service_id=43)
+        else:
+            raise HTTPException(status_code=401, detail="Authorization header missing")
+
         response_body = BatchRequestHandler(batch_session).handle_batch_request_list_object(
             ent_id, client_ref_id, request_id, pan_list, env
         )

@@ -45,6 +45,9 @@ class Configuration:
     DB_POOL_SIZE = int(os.getenv("DB_POOL_SIZE", 10))
     DB_MAX_OVERFLOW = int(os.getenv("DB_MAX_OVERFLOW", 10))
 
+    JWT_SECRET = os.getenv("JWT_SECRET")
+    AES_SECRET_KEY = b'dXNlcl9tYW5hZ2Vt'
+
     # ECS configurations
     ECS_CLUSTER = os.getenv('ECS_CLUSTER')
     ECS_CONTAINER_NAME = os.getenv('ECS_CONTAINER_NAME')
