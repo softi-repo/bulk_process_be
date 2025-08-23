@@ -15,14 +15,17 @@ class HistoryHandler:
         logger.info('Inside history_api function')
         logger.info(f'The ent_id from the input api: {ent_id}')
 
-        query_params = [IEBatchRequestLog.ent_id == ent_id, IEBatchRequestLog.env == env ]
 
-        batch_request_objs = self.db_session.query(IEBatchRequestLog).filter(*query_params).order_by(
+        batch_request_objs = self.db_session.query(IEBatchRequestLog).filter(
+            IEBatchRequestLog.cid == ent_id,
+            IEBatchRequestLog.env == env
+        ).order_by(
             IEBatchRequestLog.id.desc()).limit(no_of_rows).offset(
             page_number * no_of_rows
         ).all()
 
-        batch_request_objs_count = self.db_session.query(IEBatchRequestLog).filter(*query_params).count()
+        batch_request_objs_count = self.db_session.query(IEBatchRequestLog).filter(IEBatchRequestLog.cid == ent_id,
+            IEBatchRequestLog.env == env).count()
 
         batch_request_compiled_list = []
         dict_of_history_handler = {

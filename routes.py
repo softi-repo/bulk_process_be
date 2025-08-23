@@ -1,7 +1,5 @@
 import uuid
-from email.header import Header
 from typing import Optional
-from jose import jwt
 from fastapi import Request, Response, Form, APIRouter, UploadFile, File, HTTPException
 from starlette import status
 
@@ -146,8 +144,8 @@ async def batch_request(
 async def batch_history(
         response: Response,
         request: Request,
-        page: int,
-        limit: int
+        page: int = Form(),
+        limit: int = Form()
 ):
     logger.info("Inside batch/history route ")
     request_headers = request.headers
