@@ -16,7 +16,7 @@ class MultipleStatusHandler:
         batch_request_obj = (
             self.db_session.query(IEBatchRequestLog)
             .filter(
-                IEBatchRequestLog.ent_id == ent_id,
+                IEBatchRequestLog.cid == ent_id,
                 IEBatchRequestLog.env == env,
                 IEBatchRequestLog.request_id == request_id,
             )
