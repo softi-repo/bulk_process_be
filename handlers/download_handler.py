@@ -13,7 +13,7 @@ class DownloadHandler:
 
     def __init__(self):
         self.db_manager = DatabaseManager()
-        self.db_session = self.db_manager.get_db(Configuration.BATCH_DB_CONNECTION_URL)
+        self.db_session = self.db_manager.get_db(Configuration.BATCH_DB_CONNECTION_URL, Configuration.IE_DB)
 
     def download_excel_sheet(self, ent_id: int, request_id: str, env: str):
         """

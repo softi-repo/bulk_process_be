@@ -194,7 +194,7 @@ async def batch_download(
     db_manager, softi_session, batch_session = get_db_sessions()
     try:
 
-        ent_id, _, _ = Authenticator().validate(request_headers, softi_session)
+        ent_id, _ = Authenticator().validate(request_headers, softi_session)
         response_body = DownloadHandler().download_excel_sheet(ent_id, request_id, env)
 
     except Exception as e:
