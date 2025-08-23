@@ -65,7 +65,7 @@ async def batch_request(
     host = request.headers.get("host", "")
     common_util_obj = CommonUtils()
     env = common_util_obj.determine_environment(host)
-
+    authorization = request.headers.get("Authorization")
     db_manager, softi_session, batch_session = get_db_sessions()
     try:
         ent_id, _ = Authenticator().validate(request.headers, softi_session, service_id = 43)
@@ -87,6 +87,7 @@ async def batch_status(request_id: str, response: Response, request: Request):
     logger.info(f"[STATUS] Headers: {dict(request.headers)} | Request ID: {request_id} | Session ID: {session_id}")
 
     db_manager, softi_session, batch_session = get_db_sessions()
+    authorization = request.headers.get("Authorization")
     try:
         Authenticator().validate(request.headers, softi_session)
         response_body = StatusHandler(batch_session).get_batch_request_status(request_id)
@@ -155,7 +156,7 @@ async def batch_history(
     logger.info(f'Incoming Limit (Number_of_row_per_page) {limit}')
     logger.info(f'Incoming page number {page}')
 
-
+    authorization = request.headers.get("Authorization")
     request_id = str(uuid.uuid4())
     host = request.headers.get("host", "")
     common_util_obj = CommonUtils()
@@ -163,7 +164,17 @@ async def batch_history(
     db_manager, softi_session, batch_session = get_db_sessions()
 
     try:
-        ent_id, _, = Authenticator().validate(request_headers, softi_session)
+        if authorization:
+            if authorization.startswith("Bearer "):
+                bearer_token = authorization.split(" ")[1]
+                ent_id, client_id, client_secret, auth_token = CommonUtils().bearer_token_function(bearer_token)
+                print("ent_id, client_id, client_secret, auth_token")
+                print(ent_id, client_id, client_secret, auth_token)
+            elif authorization.startswith("Basic "):
+                ent_id, _, = Authenticator().validate(request_headers, softi_session)
+        else:
+            raise HTTPException(status_code=401, detail="Authorization header missing")
+
         response_body = HistoryHandler(batch_session).history_api(ent_id, page, limit, env)
 
     except Exception as e:
@@ -187,14 +198,22 @@ async def batch_download(
     logger.info(f'Incoming Request Headers: {request_headers.__dict__}')
     logger.info(f'Incoming Request Service ID: {request_id}')
     request_id = str(uuid.uuid4())
-
+    authorization = request.headers.get("Authorization")
     host = request.headers.get("host", "")
     common_util_obj = CommonUtils()
     env = common_util_obj.determine_environment(host)
     db_manager, softi_session, batch_session = get_db_sessions()
     try:
-
-        ent_id, _ = Authenticator().validate(request_headers, softi_session)
+        if authorization:
+            if authorization.startswith("Bearer "):
+                bearer_token = authorization.split(" ")[1]
+                ent_id, client_id, client_secret, auth_token = CommonUtils().bearer_token_function(bearer_token)
+                print("ent_id, client_id, client_secret, auth_token")
+                print(ent_id, client_id, client_secret, auth_token)
+            elif authorization.startswith("Basic "):
+                ent_id, _, = Authenticator().validate(request_headers, softi_session)
+        else:
+            raise HTTPException(status_code=401, detail="Authorization header missing")
         response_body = DownloadHandler().download_excel_sheet(ent_id, request_id, env)
 
     except Exception as e:
@@ -216,14 +235,23 @@ async def batch_multiple_status(
     request_headers = request.headers
 
     logger.info(f'Incoming Request Headers in history api: {request_headers.__dict__}')
-
+    authorization = request.headers.get("Authorization")
     host = request.headers.get("host", "")
     common_util_obj = CommonUtils()
     env = common_util_obj.determine_environment(host)
     db_manager, softi_session, batch_session = get_db_sessions()
 
     try:
-        ent_id, _, = Authenticator().validate(request_headers, softi_session)
+        if authorization:
+            if authorization.startswith("Bearer "):
+                bearer_token = authorization.split(" ")[1]
+                ent_id, client_id, client_secret, auth_token = CommonUtils().bearer_token_function(bearer_token)
+                print("ent_id, client_id, client_secret, auth_token")
+                print(ent_id, client_id, client_secret, auth_token)
+            elif authorization.startswith("Basic "):
+                ent_id, _, = Authenticator().validate(request_headers, softi_session)
+        else:
+            raise HTTPException(status_code=401, detail="Authorization header missing")
         response_body = MultipleStatusHandler(batch_session).multiple_status_api(ent_id, env, request_id)
 
     except Exception as e:
